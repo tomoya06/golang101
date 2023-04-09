@@ -22,8 +22,6 @@ import (
 	"github.com/chromedp/chromedp"
 )
 
-var wg sync.WaitGroup
-
 const DownloadBasePath = "./images/"
 
 // 获取网站上爬取的数据
@@ -82,8 +80,6 @@ func GetSpecialData(htmlContent string, selector string) ([]string, error) {
 }
 
 func DownloadImageFromUrl(url string) error {
-	defer wg.Done()
-
 	filepaths := strings.Split(url, "/")
 	fileName := filepaths[len(filepaths)-1]
 
@@ -139,12 +135,15 @@ func main() {
 		return
 	}
 
+	var wg sync.WaitGroup
 	wg.Add(len(elem))
 
 	for _, src := range elem {
 		go func(_src string) {
+			defer wg.Done()
+
 			log.Printf("new src: %s", _src)
-			go DownloadImageFromUrl(_src)
+			DownloadImageFromUrl(_src)
 		}(src)
 	}
 
