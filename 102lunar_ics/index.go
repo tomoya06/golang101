@@ -1,11 +1,14 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 	"strings"
 	"time"
+
+	"syscall/js"
 
 	"github.com/Lofanmi/chinese-calendar-golang/lunar"
 	ics "github.com/arran4/golang-ical"
@@ -62,7 +65,7 @@ func (evt *LunarEventBundle) AddEventToCalendar(cal *ics.Calendar) {
 	event.SetSummary(name)
 }
 
-func WriteToIcs(input string) {
+func WriteToFile(input string) {
 	os.Mkdir(DOWNLOAD_BASE_PATH, os.ModePerm)
 
 	f, err := os.Create(DOWNLOAD_BASE_PATH + "date.ics")
@@ -90,27 +93,34 @@ func (birthday *LunarBirthday) AddBirthdays(cal *ics.Calendar, remindAt int) {
 	}
 }
 
-func main() {
-	bds := []LunarBirthday{
-		{
-			yy:   1963,
-			mm:   4,
-			dd:   16,
-			name: "🎂父亲大人生日🎂",
-		},
-		{
-			yy:   1967,
-			mm:   9,
-			dd:   23,
-			name: "🎂母亲大人生日🎂",
-		},
-	}
-	remindAt := 12
-
+func GenerateIcsContent(bds []LunarBirthday, remindAt int) string {
 	cal := ics.NewCalendar()
 	for _, bd := range bds {
 		bd.AddBirthdays(cal, remindAt)
 	}
 	icsStr := cal.Serialize()
-	WriteToIcs(icsStr)
+	return icsStr
+}
+
+type GenerateParams struct {
+	bds      []LunarBirthday `json:"bds"`
+	remindAt int             `json:"remindAt"`
+}
+
+func jsWrapper() js.Func {
+	jsonFunc := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		if len(args) != 1 {
+			return js.Null
+		}
+		inputJSON := args[0].String()
+		inputObj := GenerateParams{}
+		json.Unmarshal([]byte(inputJSON), &inputObj)
+		output := GenerateIcsContent(inputObj.bds, inputObj.remindAt)
+		return output
+	})
+	return jsonFunc
+}
+
+func main() {
+
 }
