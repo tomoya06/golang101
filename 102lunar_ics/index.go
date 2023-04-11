@@ -122,5 +122,7 @@ func jsWrapper() js.Func {
 }
 
 func main() {
-
+	fmt.Println("Go Web Assembly")
+	js.Global().Set("generateIcsContent", jsWrapper())
+	<-make(chan bool)
 }
