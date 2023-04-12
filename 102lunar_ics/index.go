@@ -19,10 +19,10 @@ const MAX_LUNAR_AGES = 100
 const LUNAR_LEAP_PREFIX = "(闰月)"
 
 type LunarBirthday struct {
-	yy   int
-	mm   int
-	dd   int
-	name string
+	YY   int    `json:"yy"`
+	MM   int    `json:"mm"`
+	DD   int    `json:"dd"`
+	Name string `json:"name"`
 }
 
 type LunarEventInputs struct {
@@ -83,11 +83,11 @@ func WriteToFile(input string) {
 func (birthday *LunarBirthday) AddBirthdays(cal *ics.Calendar, remindAt int) {
 	for cnt := 0; cnt <= MAX_LUNAR_AGES; cnt += 1 {
 		bdInput := LunarEventInputs{
-			yy:       birthday.yy + cnt,
-			dd:       birthday.dd,
-			mm:       birthday.mm,
+			yy:       birthday.YY + cnt,
+			dd:       birthday.DD,
+			mm:       birthday.MM,
 			remindAt: remindAt,
-			name:     birthday.name,
+			name:     birthday.Name,
 		}
 		bdInput.AddBirthdaysForOneYear(cal)
 	}
@@ -103,19 +103,23 @@ func GenerateIcsContent(bds []LunarBirthday, remindAt int) string {
 }
 
 type GenerateParams struct {
-	bds      []LunarBirthday `json:"bds"`
-	remindAt int             `json:"remindAt"`
+	BDS      []LunarBirthday `json:"bds"`
+	RemindAt int             `json:"remindAt"`
 }
 
 func jsWrapper() js.Func {
 	jsonFunc := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		if len(args) != 1 {
+			fmt.Println("invalid args")
 			return js.Null
 		}
+		fmt.Println("valid args")
+
 		inputJSON := args[0].String()
 		inputObj := GenerateParams{}
 		json.Unmarshal([]byte(inputJSON), &inputObj)
-		output := GenerateIcsContent(inputObj.bds, inputObj.remindAt)
+		output := GenerateIcsContent(inputObj.BDS, inputObj.RemindAt)
+		fmt.Println(inputJSON, "|", inputObj, "|", len(inputObj.BDS), inputObj.RemindAt)
 		return output
 	})
 	return jsonFunc
@@ -126,3 +130,11 @@ func main() {
 	js.Global().Set("generateIcsContent", jsWrapper())
 	<-make(chan bool)
 }
+
+// func main() {
+// 	inputJSON := `{"bds":[{"yy":1996,"mm":12,"dd":12,"name":"test"}],"remindAt":12}`
+// 	inputObj := GenerateParams{}
+// 	json.Unmarshal([]byte(inputJSON), &inputObj)
+// 	output := GenerateIcsContent(inputObj.BDS, inputObj.RemindAt)
+// 	fmt.Println(output)
+// }
